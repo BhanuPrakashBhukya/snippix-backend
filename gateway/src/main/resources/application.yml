@@ -1,0 +1,169 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: api-gateway
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/snippix-realm
+
+  cloud:
+    gateway:
+
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - http://localhost:4200
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+            allowCredentials: true
+
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      routes:
+
+        # ==========================
+        # AUTH-SERVICE (HTTP)
+        # ==========================
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service
+                fallbackUri: forward:/fallback/auth-service
+
+        # ==========================
+        # USER-SERVICE (HTTP)
+        # ==========================
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: user-service
+                fallbackUri: forward:/fallback/user-service
+
+        # ==========================
+        # CHAT-SERVICE (WEBSOCKET)
+        # ==========================
+        - id: chat-service-ws
+          uri: ws://chat-service:8084
+          predicates:
+            - Path=/ws/chat
+        # ==========================
+        # CHAT-SERVICE (HTTP)
+        # ==========================
+        - id: chat-service-http
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/chat/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: chat-service
+                fallbackUri: forward:/fallback/chat-service
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# ==========================
+# RATE LIMIT CONFIG (HTTP ONLY)
+# ==========================
+rate-limit:
+  rules:
+    /auth/login:
+      maxTokens: 5
+      refillRate: 0.1
+      ttlSeconds: 60
+
+    /api/users:
+      maxTokens: 100
+      refillRate: 1
+      ttlSeconds: 60
+
+management:
+  health:
+    redis:
+      enabled: false
+
+# ==========================
+# RESILIENCE4J (HTTP ONLY)
+# ==========================
+resilience4j:
+
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+    instances:
+      user-service:
+        baseConfig: default
+        failureRateThreshold: 40
+        waitDurationInOpenState: 15s
+
+      auth-service:
+        baseConfig: default
+        failureRateThreshold: 30
+        waitDurationInOpenState: 10s
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 2s
+
+    instances:
+      user-service:
+        timeoutDuration: 2s
+
+      auth-service:
+        timeoutDuration: 1s
+
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+    instances:
+      user-service:
+        maxConcurrentCalls: 30
+
+      auth-service:
+        maxConcurrentCalls: 20

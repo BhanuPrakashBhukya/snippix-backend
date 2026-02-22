@@ -1,0 +1,17 @@
+{
+  "groups": [
+    {
+      "name": "rate-limit",
+      "type": "com.meloffy.gateway.config.RateLimitProperties",
+      "sourceType": "com.meloffy.gateway.config.RateLimitProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "rate-limit.rules",
+      "type": "java.util.Map<java.lang.String,com.meloffy.gateway.config.RateLimitProperties$Rule>",
+      "sourceType": "com.meloffy.gateway.config.RateLimitProperties"
+    }
+  ],
+  "hints": []
+}

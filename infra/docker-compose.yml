@@ -1,0 +1,141 @@
+services:
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    networks:
+      - spring-net
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: chat-cluster
+      CASSANDRA_DC: datacenter1
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - spring-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.5
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    networks:
+      - spring-net
+
+  eureka-server:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: eureka-server
+    working_dir: /app
+    volumes:
+      - ../sd:/app
+      - ~/.m2:/root/.m2
+    command: mvn spring-boot:run
+    ports:
+      - "8761:8761"
+      - "5004:5004"
+    networks:
+      - spring-net
+    depends_on:
+      - redis
+
+  user-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: user-service
+    working_dir: /app
+    volumes:
+      - ../us:/app
+      - ~/.m2:/root/.m2
+    command: >
+      mvn spring-boot:run
+      -Dspring-boot.run.jvmArguments="
+      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5006"
+    ports:
+      - "8082:8082"
+      - "5006:5006"
+    depends_on:
+      - eureka-server
+      - keycloak
+    networks:
+      - spring-net
+
+  auth-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: auth-service
+    working_dir: /app
+    volumes:
+      - ../auth-service:/app
+      - ~/.m2:/root/.m2
+    command: >
+      mvn spring-boot:run
+      -Dspring-boot.run.jvmArguments="
+      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    ports:
+      - "8083:8083"
+      - "5005:5005"
+    depends_on:
+      - user-service
+      - keycloak
+      - eureka-server
+    networks:
+      - spring-net
+
+  api-gateway:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: api-gateway
+    working_dir: /app
+    volumes:
+      - ../gateway:/app
+      - ~/.m2:/root/.m2
+    command: >
+      mvn spring-boot:run
+      -Dspring-boot.run.jvmArguments="
+      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    ports:
+      - "8081:8081"
+      - "5007:5007"
+    depends_on:
+      - eureka-server
+      - user-service
+    networks:
+      - spring-net
+
+  chat-service:
+    image: maven:3.9.9-eclipse-temurin-21
+    container_name: chat-service
+    working_dir: /app
+    volumes:
+      - ../chat-service:/app
+      - ~/.m2:/root/.m2
+    command: >
+      mvn spring-boot:run
+      -Dspring-boot.run.jvmArguments="
+      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5008"
+    ports:
+      - "8084:8084"
+      - "5008:5008"
+    depends_on:
+      - eureka-server
+      - redis
+      - cassandra
+      - keycloak
+    networks:
+      - spring-net
+
+networks:
+  spring-net:
+    driver: bridge
+
+volumes:
+  cassandra_data:

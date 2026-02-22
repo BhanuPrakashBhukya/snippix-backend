@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.meloffy.proto.user";
+option java_outer_classname = "UserProto";
+
+package user;
+
+service UserService {
+  rpc createUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc getUserByEmailOrPhone (GetUserRequest) returns (GetUserResponse);
+
+  rpc updateLastActivity (UpdateLastActivityRequest) returns (UpdateLastActivityResponse);
+}
+
+message CreateUserRequest {
+  string keycloakUserId = 1;
+  string username = 2;
+  string fullName = 3;
+  string email = 4;
+  string phone = 5;
+  string password = 6;
+}
+
+message CreateUserResponse {
+  string userId = 1;
+}
+
+message GetUserRequest {
+  string emailOrPhone = 1;
+}
+
+message GetUserResponse {
+  string userId = 1;
+  string name = 2;
+  string username = 3;
+  string email = 4;
+  string phone = 5;
+  string passwordHash = 6;
+}
+
+message UpdateLastActivityRequest {
+  string keycloakUserid = 1;
+}
+
+message UpdateLastActivityResponse {
+  bool success = 1;
+}
