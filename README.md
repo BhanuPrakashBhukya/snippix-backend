@@ -27,6 +27,22 @@ Snippix backend is a **horizontally scalable**, **fault-tolerant** messaging inf
 
 ---
 
+## 📸 Screenshots
+
+> Real-time messaging between users — powered by WebSockets + Kafka
+
+**Login Page**
+
+![Login](https://raw.githubusercontent.com/BhanuPrakashBhukya/snippix-backend/3ae2be2389d6a329cc60241e2c3975a46b1909fb/docs/screenshots/login-page.png)
+
+**Live Chat — Two Users**
+
+| Bhanu's View | Sravan's View |
+|---|---|
+| ![Bhanu Chat](https://raw.githubusercontent.com/BhanuPrakashBhukya/snippix-backend/3ae2be2389d6a329cc60241e2c3975a46b1909fb/docs/screenshots/chat-bhanu.png) | ![Sravan Chat](https://raw.githubusercontent.com/BhanuPrakashBhukya/snippix-backend/3ae2be2389d6a329cc60241e2c3975a46b1909fb/docs/screenshots/chat-sravan.png) |
+
+---
+
 ## 🏗️ Architecture
 
 ```
